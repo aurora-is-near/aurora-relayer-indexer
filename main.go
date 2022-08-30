@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	sqlblock "github.com/aurora-is-near/aurora-relayer-sqlblock"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -22,14 +23,14 @@ var fromBlock, toBlock, genesisBlock uint64
 
 func main() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "Config file (default is config/local.yaml)")
-	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "Enable debugging(default is false)")
-	rootCmd.PersistentFlags().BoolVarP(&keepFiles, "keepFiles", "k", false, "Keep json files(default is false)")
-	rootCmd.PersistentFlags().StringVarP(&databaseURL, "database", "u", "", "database url (default is postgres://aurora:aurora@database/aurora)")
-	rootCmd.PersistentFlags().StringVarP(&sourceFolder, "sourceFolder", "s", "../borealis-engine-lib/output/refiner", "Source folder populated with block.json files (default is ../borealis-engine-lib/output/refiner)")
-	rootCmd.PersistentFlags().Uint64VarP(&fromBlock, "fromBlock", "f", 0, "Block to start from. Ignored if missing or 0 (default is 0)")
-	rootCmd.PersistentFlags().Uint64VarP(&toBlock, "toBlock", "t", 0, "Block to end on. Ignored if missing or 0 (default is 0)")
-	rootCmd.PersistentFlags().Uint64VarP(&genesisBlock, "genesisBlock", "g", 1, "Aurora genesis block. It will never index blocks prior to it. (default is 1)")
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file (default is config/local.yaml)")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "enable debugging(default false)")
+	rootCmd.PersistentFlags().BoolVarP(&keepFiles, "keepFiles", "k", false, "keep json files(default false)")
+	rootCmd.PersistentFlags().StringVar(&databaseURL, "database", "", "database url (default postgres://aurora:aurora@database/aurora)")
+	rootCmd.PersistentFlags().StringVarP(&sourceFolder, "sourceFolder", "s", "../borealis-engine-lib/output/refiner", "source folder populated with block.json files.")
+	rootCmd.PersistentFlags().Uint64VarP(&fromBlock, "fromBlock", "f", 0, "block to start from. Ignored if missing or 0. (default 0)")
+	rootCmd.PersistentFlags().Uint64VarP(&toBlock, "toBlock", "t", 0, "block to end on. Ignored if missing or 0. (default 0)")
+	rootCmd.PersistentFlags().Uint64VarP(&genesisBlock, "genesisBlock", "g", 1, "aurora genesis block. It will never index blocks prior to it.")
 	cobra.CheckErr(rootCmd.Execute())
 }
 
@@ -86,7 +87,7 @@ var rootCmd = &cobra.Command{
 			fromBlock = genesisBlock
 		}
 
-		go indexBlocks(sourceFolder, pgpool, Uint64(fromBlock), Uint64(toBlock))
+		go indexBlocks(sourceFolder, pgpool, fromBlock, toBlock)
 
 		interrupt := make(chan os.Signal, 10)
 		signal.Notify(interrupt, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGABRT, syscall.SIGINT)
@@ -96,7 +97,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock Uint64, toBlock Uint64) {
+func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock uint64) {
 	for {
 		subFolder := getSubFolder(folder, fromBlock)
 		fileName := fmt.Sprintf("%s/%v.json", subFolder, fromBlock)
@@ -105,14 +106,14 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock Uint64, toBlock 
 			log.Debug().Msg(fmt.Sprintf("Waiting for new block in %v..", fileName))
 			wait()
 		} else {
-			var block Block
+			var block sqlblock.Block
 			err := json.Unmarshal([]byte(content), &block)
 			if err != nil {
 				log.Warn().Msg(fmt.Sprintf("Failed to parse: %+v. Retrying..\n", err))
 				wait()
 			} else {
 				block.Sequence = block.Height
-				sql := block.insertSql()
+				sql := block.InsertSql()
 				// fmt.Println(sql)
 				_, err := pgpool.Exec(context.Background(), sql)
 
@@ -122,7 +123,7 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock Uint64, toBlock 
 				} else {
 					log.Info().Msg(fmt.Sprintf("%+v", block.Height))
 					if !keepFiles {
-						cleanup(fileName, folder, block.Height)
+						cleanup(fileName, folder, uint64(block.Height))
 					}
 				}
 				fromBlock += 1
@@ -141,7 +142,7 @@ func getPendingBlockHeight(pgpool *pgxpool.Pool) (uint64, error) {
 	return blockID + 1, nil
 }
 
-func cleanup(fileName string, folder string, block Uint64) {
+func cleanup(fileName string, folder string, block uint64) {
 	err := os.Remove(fileName)
 	if err != nil {
 		log.Warn().Msg(fmt.Sprintf("Unable to remove file %v: %v\n", fileName, err))
@@ -159,6 +160,6 @@ func wait() {
 	time.Sleep(500 * time.Millisecond)
 }
 
-func getSubFolder(folder string, block Uint64) string {
+func getSubFolder(folder string, block uint64) string {
 	return fmt.Sprintf("%s/%v", folder, block/10000*10000)
 }

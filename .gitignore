@@ -2,6 +2,7 @@
 .DS_Store
 
 dist
+indexer
 
 # Visual Studio Code
 .vscode/
