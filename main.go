@@ -99,6 +99,10 @@ var rootCmd = &cobra.Command{
 
 func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock uint64) {
 	for {
+		if (toBlock > 0) && (toBlock <= fromBlock) {
+			fmt.Printf("Ended on %v\n", toBlock)
+			os.Exit(0)
+		}
 		subFolder := getSubFolder(folder, fromBlock)
 		fileName := fmt.Sprintf("%s/%v.json", subFolder, fromBlock)
 		content, err := os.ReadFile(fileName)
