@@ -88,7 +88,7 @@ var rootCmd = &cobra.Command{
 			fromBlock = genesisBlock
 		}
 
-		updateRefinerLastBlock(sourceFolder, fromBlock)
+		updateRefinerLastBlock(sourceFolder, fromBlock-1)
 
 		go indexBlocks(sourceFolder, pgpool, fromBlock, toBlock)
 
