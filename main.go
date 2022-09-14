@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -87,6 +88,8 @@ var rootCmd = &cobra.Command{
 			fromBlock = genesisBlock
 		}
 
+		updateRefinerLastBlock(sourceFolder, fromBlock)
+
 		go indexBlocks(sourceFolder, pgpool, fromBlock, toBlock)
 
 		interrupt := make(chan os.Signal, 10)
@@ -166,4 +169,29 @@ func wait() {
 
 func getSubFolder(folder string, block uint64) string {
 	return fmt.Sprintf("%s/%v", folder, block/10000*10000)
+}
+
+func updateRefinerLastBlock(folder string, block uint64) {
+	file := fmt.Sprintf("%s/.REFINER_LAST_BLOCK", folder)
+	data, err := os.ReadFile(file)
+	if err == nil {
+		refinerLastBlock, err := strconv.ParseUint(string(data), 10, 64)
+		if err == nil && refinerLastBlock < block {
+			updateRefinerLastBlockFile(file, block)
+		}
+	} else {
+		updateRefinerLastBlockFile(file, block)
+	}
+}
+
+func updateRefinerLastBlockFile(file string, block uint64) {
+	f, err := os.Create(file)
+	if err != nil {
+		panic(fmt.Errorf(".REFINER_LAST_BLOCK can not be opened: %v\n", err))
+	}
+	defer f.Close()
+	_, err = f.WriteString(strconv.FormatUint(block, 10))
+	if err != nil {
+		panic(fmt.Errorf(".REFINER_LAST_BLOCK can not be updated: %v\n", err))
+	}
 }
