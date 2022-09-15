@@ -110,7 +110,7 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock 
 		fileName := fmt.Sprintf("%s/%v.json", subFolder, fromBlock)
 		content, err := os.ReadFile(fileName)
 		if err != nil {
-			log.Warn().Msg(fmt.Sprintf("Waiting for new block in %v..", fileName))
+			log.Debug().Msg(fmt.Sprintf("Waiting for new block in %v..", fileName))
 			wait()
 		} else {
 			var block sqlblock.Block
