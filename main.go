@@ -110,7 +110,7 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock 
 		fileName := fmt.Sprintf("%s/%v.json", subFolder, fromBlock)
 		content, err := os.ReadFile(fileName)
 		if err != nil {
-			log.Debug().Msg(fmt.Sprintf("Waiting for new block in %v..", fileName))
+			log.Warn().Msg(fmt.Sprintf("Waiting for new block in %v..", fileName))
 			wait()
 		} else {
 			var block sqlblock.Block
@@ -172,6 +172,10 @@ func getSubFolder(folder string, block uint64) string {
 }
 
 func updateRefinerLastBlock(folder string, block uint64) {
+	err := os.MkdirAll(folder, 0755)
+	if err != nil {
+		panic(fmt.Errorf("refiner dir can not be created: %v\n", err))
+	}
 	file := fmt.Sprintf("%s/.REFINER_LAST_BLOCK", folder)
 	data, err := os.ReadFile(file)
 	if err == nil {
