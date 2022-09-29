@@ -41,7 +41,7 @@ func initConfig() {
 	}
 
 	if configFile != "" {
-		log.Warn().Msg(fmt.Sprint("Using config file:", viper.ConfigFileUsed()))
+		log.Warn().Msgf("Using config file: %v", viper.ConfigFileUsed())
 		viper.SetConfigFile(configFile)
 	} else {
 		viper.AddConfigPath("config")
@@ -54,7 +54,7 @@ func initConfig() {
 	viper.SetConfigType("yaml")
 
 	if err := viper.ReadInConfig(); err == nil {
-		log.Warn().Msg(fmt.Sprint("Using config file:", viper.ConfigFileUsed()))
+		log.Warn().Msgf("Using config file: %v", viper.ConfigFileUsed())
 	}
 	debug = viper.GetBool("debug")
 	databaseURL = viper.GetString("database")
@@ -67,7 +67,7 @@ func initConfig() {
 var rootCmd = &cobra.Command{
 	Use:     "indexer",
 	Short:   "Consumes json files to produce blocks.",
-	Long:    `Consumes json files to produce blocks. Generates sql and iserts them to db.`,
+	Long:    `Consumes json files to produce blocks. Generates sql and inserts them to db.`,
 	Version: "0.0.1",
 	Run: func(cmd *cobra.Command, args []string) {
 		pgpool, err := pgxpool.Connect(context.Background(), databaseURL)
@@ -107,13 +107,13 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock 
 		fileName := fmt.Sprintf("%s/%v.json", subFolder, fromBlock)
 		content, err := os.ReadFile(fileName)
 		if err != nil {
-			log.Debug().Msg(fmt.Sprintf("Waiting for new block in %v..", fileName))
+			log.Debug().Msgf("Waiting for new block in %v..", fileName)
 			wait()
 		} else {
 			var block sqlblock.Block
 			err := json.Unmarshal([]byte(content), &block)
 			if err != nil {
-				log.Warn().Msg(fmt.Sprintf("Failed to parse: %+v. Retrying..\n", err))
+				log.Warn().Msgf("Failed to parse: %+v. Retrying..\n", err)
 				wait()
 			} else {
 				block.Sequence = block.Height
@@ -122,10 +122,10 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock 
 				_, err := pgpool.Exec(context.Background(), sql)
 
 				if err != nil {
-					log.Warn().Msg(fmt.Sprintf("Unable import block %v: %v\n", block.Height, err))
+					log.Warn().Msgf("Unable import block %v: %v\n", block.Height, err)
 					wait()
 				} else {
-					log.Info().Msg(fmt.Sprintf("%+v", block.Height))
+					log.Info().Msgf("%+v", block.Height)
 					if !keepFiles {
 						cleanup(fileName, folder, uint64(block.Height))
 					}
@@ -149,13 +149,13 @@ func getPendingBlockHeight(pgpool *pgxpool.Pool) (uint64, error) {
 func cleanup(fileName string, folder string, block uint64) {
 	err := os.Remove(fileName)
 	if err != nil {
-		log.Warn().Msg(fmt.Sprintf("Unable to remove file %v: %v\n", fileName, err))
+		log.Warn().Msgf("Unable to remove file %v: %v\n", fileName, err)
 	}
 	if block == block/10000*10000 {
 		subFolder := getSubFolder(folder, block-1)
 		err := os.Remove(subFolder)
 		if err != nil {
-			log.Warn().Msg(fmt.Sprintf("Unable to remove folder %v: %v\n", subFolder, err))
+			log.Warn().Msgf("Unable to remove folder %v: %v\n", subFolder, err)
 		}
 	}
 }
