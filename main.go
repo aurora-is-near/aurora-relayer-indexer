@@ -21,6 +21,8 @@ var configFile, databaseURL, sourceFolder string
 var debug, keepFiles bool
 var fromBlock, toBlock, genesisBlock uint64
 
+const pgPoolExecTimeout = 10000 * time.Millisecond
+
 func main() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file (default is config/local.yaml)")
@@ -119,7 +121,10 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock 
 				block.Sequence = block.Height
 				sql := block.InsertSql()
 				// fmt.Println(sql)
-				_, err := pgpool.Exec(context.Background(), sql)
+				ctx, cancel := context.WithTimeout(context.Background(), pgPoolExecTimeout)
+				defer cancel()
+
+				_, err := pgpool.Exec(ctx, sql)
 
 				if err != nil {
 					log.Warn().Msgf("Unable import block %v: %v\n", block.Height, err)
