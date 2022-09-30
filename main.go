@@ -48,7 +48,7 @@ func initConfig() {
 		viper.AddConfigPath("../../config")
 		viper.SetConfigName("local")
 		if err := viper.BindPFlags(rootCmd.PersistentFlags()); err != nil {
-			panic(fmt.Errorf("Flags are not bindable: %v\n", err))
+			log.Panic().Err(err).Msg("Flags are not bindable")
 		}
 	}
 	viper.SetConfigType("yaml")
@@ -72,14 +72,14 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pgpool, err := pgxpool.Connect(context.Background(), databaseURL)
 		if err != nil {
-			panic(fmt.Errorf("Unable to connect to database %s: %v\n", databaseURL, err))
+			log.Panic().Err(err).Msgf("Unable to connect to database: %s", databaseURL)
 		}
 		defer pgpool.Close()
 
 		if fromBlock == 0 {
 			fromBlock, err = getPendingBlockHeight(pgpool)
 			if err != nil {
-				panic(fmt.Errorf("Can not retreive last indexed block from db: %v\n", err))
+				log.Panic().Err(err).Msgf("Can not retrieve last indexed block from db: %s", databaseURL)
 			}
 		}
 
