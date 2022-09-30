@@ -100,11 +100,7 @@ var rootCmd = &cobra.Command{
 }
 
 func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock uint64) {
-	for {
-		if (toBlock > 0) && (toBlock <= fromBlock) {
-			fmt.Printf("Ended on %v\n", toBlock)
-			os.Exit(0)
-		}
+	for !(toBlock > 0 && toBlock <= fromBlock) {
 		subFolder := getSubFolder(folder, fromBlock)
 		fileName := fmt.Sprintf("%s/%v.json", subFolder, fromBlock)
 		content, err := os.ReadFile(fileName)
@@ -139,6 +135,9 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock 
 			}
 		}
 	}
+
+	fmt.Printf("Ended on %v\n", toBlock)
+	os.Exit(0)
 }
 
 func getPendingBlockHeight(pgpool *pgxpool.Pool) (uint64, error) {
