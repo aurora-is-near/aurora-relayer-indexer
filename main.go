@@ -92,7 +92,7 @@ var rootCmd = &cobra.Command{
 		go indexBlocks(sourceFolder, pgpool, fromBlock, toBlock)
 
 		interrupt := make(chan os.Signal, 10)
-		signal.Notify(interrupt, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGABRT, syscall.SIGINT)
+		signal.Notify(interrupt, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
 
 		<-interrupt
 		os.Exit(0)
