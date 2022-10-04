@@ -95,7 +95,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func indexBlocks(interrupt chan os.Signal, folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock uint64) {
+func indexBlocks(interrupt chan os.Signal, folder string, pgpool *pgxpool.Pool, fromBlock, toBlock uint64) {
 	for !(toBlock > 0 && toBlock <= fromBlock) {
 		select {
 		case <-interrupt:
@@ -111,7 +111,7 @@ func indexBlocks(interrupt chan os.Signal, folder string, pgpool *pgxpool.Pool, 
 			wait()
 		} else {
 			var block sqlblock.Block
-			err := json.Unmarshal([]byte(content), &block)
+			err := json.Unmarshal(content, &block)
 			if err != nil {
 				log.Warn().Msgf("Failed to parse: %+v. Retrying..\n", err)
 				wait()
@@ -132,7 +132,7 @@ func indexBlocks(interrupt chan os.Signal, folder string, pgpool *pgxpool.Pool, 
 						cleanup(fileName, folder, uint64(block.Height))
 					}
 				}
-				fromBlock += 1
+				fromBlock++
 			}
 		}
 	}
@@ -151,7 +151,7 @@ func getPendingBlockHeight(pgpool *pgxpool.Pool) (uint64, error) {
 	return blockID + 1, nil
 }
 
-func cleanup(fileName string, folder string, block uint64) {
+func cleanup(fileName, folder string, block uint64) {
 	err := os.Remove(fileName)
 	if err != nil {
 		log.Warn().Msgf("Unable to remove file %v: %v\n", fileName, err)
