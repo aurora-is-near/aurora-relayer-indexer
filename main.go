@@ -89,18 +89,20 @@ var rootCmd = &cobra.Command{
 			fromBlock = genesisBlock
 		}
 
-		go indexBlocks(sourceFolder, pgpool, fromBlock, toBlock)
-
 		interrupt := make(chan os.Signal, 10)
 		signal.Notify(interrupt, syscall.SIGHUP, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGINT)
-
-		<-interrupt
-		os.Exit(0)
+		indexBlocks(interrupt, sourceFolder, pgpool, fromBlock, toBlock)
 	},
 }
 
-func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock, toBlock uint64) {
+func indexBlocks(interrupt chan os.Signal, folder string, pgpool *pgxpool.Pool, fromBlock, toBlock uint64) {
 	for !(toBlock > 0 && toBlock <= fromBlock) {
+		select {
+		case <-interrupt:
+			return
+		default:
+		}
+
 		subFolder := getSubFolder(folder, fromBlock)
 		fileName := fmt.Sprintf("%s/%v.json", subFolder, fromBlock)
 		content, err := os.ReadFile(fileName)
