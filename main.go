@@ -99,7 +99,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock uint64) {
+func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock, toBlock uint64) {
 	for !(toBlock > 0 && toBlock <= fromBlock) {
 		subFolder := getSubFolder(folder, fromBlock)
 		fileName := fmt.Sprintf("%s/%v.json", subFolder, fromBlock)
@@ -109,7 +109,7 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock 
 			wait()
 		} else {
 			var block sqlblock.Block
-			err := json.Unmarshal([]byte(content), &block)
+			err := json.Unmarshal(content, &block)
 			if err != nil {
 				log.Warn().Msgf("Failed to parse: %+v. Retrying..\n", err)
 				wait()
@@ -118,9 +118,8 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock 
 				sql := block.InsertSql()
 				// fmt.Println(sql)
 				ctx, cancel := context.WithTimeout(context.Background(), pgPoolExecTimeout)
-				defer cancel()
-
 				_, err := pgpool.Exec(ctx, sql)
+				cancel()
 
 				if err != nil {
 					log.Warn().Msgf("Unable import block %v: %v\n", block.Height, err)
@@ -131,7 +130,7 @@ func indexBlocks(folder string, pgpool *pgxpool.Pool, fromBlock uint64, toBlock 
 						cleanup(fileName, folder, uint64(block.Height))
 					}
 				}
-				fromBlock += 1
+				fromBlock++
 			}
 		}
 	}
@@ -150,7 +149,7 @@ func getPendingBlockHeight(pgpool *pgxpool.Pool) (uint64, error) {
 	return blockID + 1, nil
 }
 
-func cleanup(fileName string, folder string, block uint64) {
+func cleanup(fileName, folder string, block uint64) {
 	err := os.Remove(fileName)
 	if err != nil {
 		log.Warn().Msgf("Unable to remove file %v: %v\n", fileName, err)
