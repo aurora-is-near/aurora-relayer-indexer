@@ -120,9 +120,8 @@ func indexBlocks(interrupt chan os.Signal, folder string, pgpool *pgxpool.Pool, 
 				sql := block.InsertSql()
 				// fmt.Println(sql)
 				ctx, cancel := context.WithTimeout(context.Background(), pgPoolExecTimeout)
-				defer cancel()
-
 				_, err := pgpool.Exec(ctx, sql)
+				cancel()
 
 				if err != nil {
 					log.Warn().Msgf("Unable import block %v: %v\n", block.Height, err)
