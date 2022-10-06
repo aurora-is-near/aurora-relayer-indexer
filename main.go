@@ -38,9 +38,6 @@ func main() {
 
 func initConfig() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if debug {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
 
 	if configFile != "" {
 		log.Warn().Msgf("Using config file: %v", viper.ConfigFileUsed())
@@ -64,6 +61,10 @@ func initConfig() {
 	fromBlock = viper.GetUint64("fromBlock")
 	toBlock = viper.GetUint64("toBlock")
 	genesisBlock = viper.GetUint64("genesisBlock")
+
+	if debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
 }
 
 var rootCmd = &cobra.Command{
@@ -131,8 +132,8 @@ func indexBlocks(interrupt chan os.Signal, folder string, pgpool *pgxpool.Pool, 
 					if !keepFiles {
 						cleanup(fileName, folder, uint64(block.Height))
 					}
+					fromBlock++
 				}
-				fromBlock++
 			}
 		}
 	}
