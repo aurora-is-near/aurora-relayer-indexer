@@ -1,0 +1,2 @@
+---
+database: postgres://pavel:@localhost:5432/aurora_relayer_indexer

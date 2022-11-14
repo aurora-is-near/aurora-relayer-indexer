@@ -36,6 +36,7 @@ func main() {
 	cobra.CheckErr(rootCmd.Execute())
 }
 
+// initConfig reads in config file if set.
 func initConfig() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
@@ -67,6 +68,7 @@ func initConfig() {
 	}
 }
 
+// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:     "indexer",
 	Short:   "Consumes json files to produce blocks.",
@@ -96,6 +98,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+// indexBlocks indexes blocks from sourceFolder to databaseURL
 func indexBlocks(interrupt chan os.Signal, folder string, pgpool *pgxpool.Pool, fromBlock, toBlock uint64) {
 	for !(toBlock > 0 && toBlock <= fromBlock) {
 		select {
@@ -139,9 +142,9 @@ func indexBlocks(interrupt chan os.Signal, folder string, pgpool *pgxpool.Pool, 
 	}
 
 	fmt.Printf("Ended on %v\n", toBlock)
-	os.Exit(0)
 }
 
+// getPendingBlockHeight returns the last block height from the database
 func getPendingBlockHeight(pgpool *pgxpool.Pool) (uint64, error) {
 	var blockID uint64
 	err := pgpool.QueryRow(context.Background(),
@@ -152,6 +155,7 @@ func getPendingBlockHeight(pgpool *pgxpool.Pool) (uint64, error) {
 	return blockID + 1, nil
 }
 
+// cleanup removes the file and the folder
 func cleanup(fileName, folder string, block uint64) {
 	err := os.Remove(fileName)
 	if err != nil {
@@ -170,6 +174,7 @@ func wait() {
 	time.Sleep(500 * time.Millisecond)
 }
 
+// getSubFolder returns the subfolder for the block
 func getSubFolder(folder string, block uint64) string {
 	return fmt.Sprintf("%s/%v", folder, block/10000*10000)
 }

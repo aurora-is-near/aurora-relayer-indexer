@@ -24,3 +24,5 @@ coverage/
 
 # Local configuration
 config/local.yaml
+# Test configuration
+config/test.yaml
