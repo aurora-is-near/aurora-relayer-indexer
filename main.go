@@ -41,8 +41,8 @@ func initConfig() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	if configFile != "" {
-		log.Warn().Msgf("Using config file: %v", viper.ConfigFileUsed())
 		viper.SetConfigFile(configFile)
+		log.Warn().Msgf("Using config file: %v", viper.ConfigFileUsed())
 	} else {
 		viper.AddConfigPath("config")
 		viper.AddConfigPath("../../config")
@@ -53,8 +53,8 @@ func initConfig() {
 	}
 	viper.SetConfigType("yaml")
 
-	if err := viper.ReadInConfig(); err == nil {
-		log.Warn().Msgf("Using config file: %v", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		log.Panic().Err(err).Msg("Cannot read config file")
 	}
 	debug = viper.GetBool("debug")
 	databaseURL = viper.GetString("database")
