@@ -41,8 +41,8 @@ func initConfig() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	if configFile != "" {
-		log.Warn().Msgf("Using config file: %v", viper.ConfigFileUsed())
 		viper.SetConfigFile(configFile)
+		log.Warn().Msgf("Using config file: %v", viper.ConfigFileUsed())
 	} else {
 		viper.AddConfigPath("config")
 		viper.AddConfigPath("../../config")
