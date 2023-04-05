@@ -62,6 +62,7 @@ func initConfig() {
 	fromBlock = viper.GetUint64("fromBlock")
 	toBlock = viper.GetUint64("toBlock")
 	genesisBlock = viper.GetUint64("genesisBlock")
+	keepFiles = viper.GetBool("keepFiles")
 
 	if debug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
