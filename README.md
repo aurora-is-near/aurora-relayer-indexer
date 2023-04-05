@@ -1,3 +1,5 @@
+⚠ WARNING: This repository is no longer maintained. New indexer is integrated into [Aurora Relayer V2](https://github.com/aurora-is-near/relayer2-public).
+
 # Aurora Relayer Indexer
 
 Aurora Relayer Indexer used to continuously populate postgres database with blocks. It relies
